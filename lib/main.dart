@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 void main() => runApp(const StreamCatchApp());
@@ -86,6 +84,7 @@ class _StreamCatchShellState extends State<_StreamCatchShell> {
   ];
   int _libraryTab = 0;
   String _searchQuery = '';
+  String _selectedCategory = 'All';
   final Set<String> _savedTitles = <String>{};
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _linkController = TextEditingController();
@@ -155,6 +154,9 @@ class _StreamCatchShellState extends State<_StreamCatchShell> {
     ),
     _Page.home => _HomePage(
       onMovie: _openDetails,
+      isSaved: _savedTitles.contains('28 Years Later'),
+      selectedCategory: _selectedCategory,
+      onCategoryChanged: (category) => setState(() => _selectedCategory = category),
       onWatchlist: () {
         _toggleSaved('28 Years Later');
         _message(
@@ -249,19 +251,6 @@ class _StreamCatchShellState extends State<_StreamCatchShell> {
         _page != _Page.conversation &&
         _page != _Page.watchRoom;
     final wide = MediaQuery.sizeOf(context).width > 720;
-    if (MediaQuery.sizeOf(context).width >= 620 && _page == _Page.home) {
-      return Scaffold(
-        body: _DesignBoard(
-          onNavigate: (index) => _go(switch (index) {
-            0 => _Page.home,
-            1 => _Page.search,
-            2 => _Page.library,
-            3 => _Page.messages,
-            _ => _Page.profile,
-          }),
-        ),
-      );
-    }
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -293,855 +282,24 @@ class _StreamCatchShellState extends State<_StreamCatchShell> {
   }
 }
 
-class _DesignBoard extends StatelessWidget {
-  const _DesignBoard({required this.onNavigate});
-  final ValueChanged<int> onNavigate;
-
-  @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, box) {
-      final phoneHeight = (box.maxHeight * .87).clamp(340.0, 670.0).toDouble();
-      final phoneWidth = math.min(phoneHeight * .48, box.maxWidth * .28);
-      return Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(.25, .9),
-            radius: 1.1,
-            colors: [Color(0xFFB63C00), Color(0xFF401800), Color(0xFF080706)],
-            stops: [0, .45, 1],
-          ),
-        ),
-        child: Center(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Transform.rotate(
-                angle: -.13,
-                child: _ShowcasePhone(
-                  width: phoneWidth,
-                  height: phoneHeight * .91,
-                  screen: const _ShowcaseHome(),
-                  navigation: _ShowcaseNavigation(
-                    selected: 0,
-                    onNavigate: onNavigate,
-                  ),
-                ),
-              ),
-              SizedBox(width: phoneWidth * .09),
-              Transform.rotate(
-                angle: .025,
-                child: _ShowcasePhone(
-                  width: phoneWidth,
-                  height: phoneHeight,
-                  screen: const _ShowcaseMovie(),
-                ),
-              ),
-              SizedBox(width: phoneWidth * .09),
-              Transform.rotate(
-                angle: .13,
-                child: _ShowcasePhone(
-                  width: phoneWidth,
-                  height: phoneHeight * .91,
-                  screen: const _ShowcaseEpisodes(),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-}
-
-class _ShowcasePhone extends StatelessWidget {
-  const _ShowcasePhone({
-    required this.width,
-    required this.height,
-    required this.screen,
-    this.navigation,
-  });
-  final double width;
-  final double height;
-  final Widget screen;
-  final Widget? navigation;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: width,
-    height: height,
-    decoration: BoxDecoration(
-      color: const Color(0xFF10100F),
-      borderRadius: BorderRadius.circular(32),
-      border: Border.all(color: Colors.white.withOpacity(.16), width: 1.2),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(.65),
-          blurRadius: 34,
-          offset: const Offset(0, 18),
-        ),
-        BoxShadow(
-          color: _orange.withOpacity(.12),
-          blurRadius: 42,
-          spreadRadius: 2,
-        ),
-      ],
-    ),
-    clipBehavior: Clip.antiAlias,
-    child: Stack(
-      children: [
-        Positioned.fill(child: screen),
-        Positioned(
-          top: 9,
-          left: 15,
-          right: 15,
-          child: Row(
-            children: [
-              const Text(
-                '9:41',
-                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700),
-              ),
-              const Spacer(),
-              Icon(
-                Icons.signal_cellular_alt,
-                size: 11,
-                color: Colors.white.withOpacity(.9),
-              ),
-              const SizedBox(width: 3),
-              Icon(Icons.wifi, size: 11, color: Colors.white.withOpacity(.9)),
-              const SizedBox(width: 3),
-              Icon(
-                Icons.battery_full,
-                size: 13,
-                color: Colors.white.withOpacity(.9),
-              ),
-            ],
-          ),
-        ),
-        if (navigation != null)
-          Positioned(left: 0, right: 0, bottom: 0, child: navigation!),
-      ],
-    ),
-  );
-}
-
-class _ShowcaseHome extends StatelessWidget {
-  const _ShowcaseHome();
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(13, 29, 13, 48),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Hello, Mohshihi!',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    'Discover something great today',
-                    style: TextStyle(fontSize: 8, color: _muted),
-                  ),
-                ],
-              ),
-            ),
-            _RoundAction(icon: Icons.search_rounded),
-            const SizedBox(width: 6),
-            _RoundAction(icon: Icons.notifications_none_rounded),
-          ],
-        ),
-        const SizedBox(height: 13),
-        const SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _ShowcaseChip('All', selected: true),
-              _ShowcaseChip('Movies'),
-              _ShowcaseChip('Series'),
-              _ShowcaseChip('TV show'),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Expanded(
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _ShowcaseFeature(),
-                const SizedBox(height: 14),
-                const Row(
-                  children: [
-                    Text(
-                      'Trending Now',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    Spacer(),
-                    Text(
-                      'See all  ›',
-                      style: TextStyle(fontSize: 8, color: _orange),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 112,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: const [
-                      _MiniPoster(
-                        title: 'Life of Chuck',
-                        image: 1,
-                        rating: '8.1',
-                      ),
-                      _MiniPoster(
-                        title: 'Jurassic World',
-                        image: 3,
-                        rating: '7.8',
-                      ),
-                      _MiniPoster(title: 'The Family', image: 4, rating: '7.6'),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 11),
-                const Text(
-                  'Popular this week',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 7),
-                const _CompactTitleRow(
-                  title: 'The Fall',
-                  subtitle: '2025  ·  Mystery',
-                ),
-                const _CompactTitleRow(
-                  title: 'Jumanji: Wild World',
-                  subtitle: '2024  ·  Adventure',
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-class _ShowcaseMovie extends StatelessWidget {
-  const _ShowcaseMovie();
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(15, 31, 15, 13),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.arrow_back_ios_new_rounded, size: 13),
-            const Spacer(),
-            const Text(
-              'PANDY BIRD  ·  ALEX GARLAND  ·  A24 FILMS',
-              style: TextStyle(
-                fontSize: 5,
-                letterSpacing: .6,
-                color: Colors.white70,
-              ),
-            ),
-            const Spacer(),
-            const Icon(Icons.favorite_border, size: 14, color: Colors.white70),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Expanded(
-          flex: 5,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              _ZombiePosterArt(),
-              const DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Color(0xCC000000)],
-                  ),
-                ),
-              ),
-              const Center(child: _PlayButton(size: 48)),
-              const Align(
-                alignment: Alignment.bottomCenter,
-                child: Padding(
-                  padding: EdgeInsets.only(bottom: 13),
-                  child: Text(
-                    '28 YEARS LATER',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 22,
-                      height: .92,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -1.1,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        const Row(
-          children: [
-            Icon(Icons.star_rounded, color: Color(0xFFFFB331), size: 13),
-            SizedBox(width: 2),
-            Text(
-              '8.6',
-              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800),
-            ),
-            SizedBox(width: 5),
-            Text(
-              'Horror · Thriller · 1h 55m',
-              style: TextStyle(fontSize: 7, color: _muted),
-            ),
-          ],
-        ),
-        const SizedBox(height: 11),
-        const Row(
-          children: [
-            Text(
-              'The Plot',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
-            ),
-            Spacer(),
-            Text('Read More  ›', style: TextStyle(fontSize: 8, color: _orange)),
-          ],
-        ),
-        const SizedBox(height: 5),
-        const Text(
-          'A group of survivors emerge from a quarantine zone to discover that the world has changed forever.',
-          maxLines: 4,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: 8, height: 1.4, color: Colors.white70),
-        ),
-        const SizedBox(height: 11),
-        const Row(
-          children: [
-            Text(
-              'Cast',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
-            ),
-            Spacer(),
-            Text('See All  ›', style: TextStyle(fontSize: 8, color: _orange)),
-          ],
-        ),
-        const SizedBox(height: 8),
-        const Row(
-          children: [
-            Expanded(child: _CastDot(name: 'Jodie Comer')),
-            Expanded(child: _CastDot(name: 'Ralph Fiennes')),
-            Expanded(child: _CastDot(name: 'A. Johnson')),
-          ],
-        ),
-      ],
-    ),
-  );
-}
-
-class _ShowcaseEpisodes extends StatelessWidget {
-  const _ShowcaseEpisodes();
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(12, 29, 12, 12),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          flex: 4,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              _ShowcaseImage(image: 4, radius: 12),
-              const DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0x22000000), Color(0xDD000000)],
-                  ),
-                ),
-              ),
-              const Center(child: _PlayButton(size: 42)),
-              const Positioned(
-                left: 9,
-                bottom: 10,
-                child: Text(
-                  'WATCH TRAILER',
-                  style: TextStyle(
-                    fontSize: 7,
-                    letterSpacing: 1.2,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        const Text(
-          'Friends',
-          style: TextStyle(
-            fontSize: 19,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -.5,
-          ),
-        ),
-        const SizedBox(height: 3),
-        const Text(
-          'S1:E1  ·  The One Where Monica Gets a Roommate',
-          style: TextStyle(fontSize: 7, color: _muted),
-        ),
-        const SizedBox(height: 7),
-        const Row(
-          children: [
-            Icon(Icons.star_rounded, color: Color(0xFFFFB331), size: 13),
-            SizedBox(width: 3),
-            Text(
-              '8.9',
-              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800),
-            ),
-            Text(' (10 Reviews)', style: TextStyle(fontSize: 7, color: _muted)),
-          ],
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          'Follow six friends as their lives and relationships unfold in New York City.',
-          maxLines: 3,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: 8, height: 1.4, color: Colors.white70),
-        ),
-        const SizedBox(height: 11),
-        const Text(
-          'Episodes',
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 7),
-        const SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _SeasonChip('S1', selected: true),
-              _SeasonChip('S2'),
-              _SeasonChip('S3'),
-              _SeasonChip('S4'),
-              _SeasonChip('S5'),
-              _SeasonChip('S6'),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        const _EpisodeRow(
-          title: 'The One Where Monica Gets a Roommate',
-          number: 'Episode 1  ·  22 min',
-          image: 1,
-        ),
-        const SizedBox(height: 6),
-        const _EpisodeRow(
-          title: 'The One with the Sonogram',
-          number: 'Episode 2  ·  23 min',
-          image: 3,
-        ),
-        const SizedBox(height: 6),
-        const _EpisodeRow(
-          title: 'The One with the Thumb',
-          number: 'Episode 3  ·  22 min',
-          image: 4,
-        ),
-      ],
-    ),
-  );
-}
-
-class _ShowcaseFeature extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) => Container(
-    height: 172,
-    clipBehavior: Clip.antiAlias,
-    decoration: BoxDecoration(
-      color: _panelRaised,
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Stack(
-      fit: StackFit.expand,
-      children: [
-        _ShowcaseImage(image: 2, radius: 0),
-        const DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0x22000000), Color(0xE6000000)],
-            ),
-          ),
-        ),
-        const Positioned(
-          left: 9,
-          top: 8,
-          child: Text(
-            'FEATURED TONIGHT',
-            style: TextStyle(
-              fontSize: 6,
-              letterSpacing: 1.1,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-        const Center(child: _PlayButton(size: 37)),
-        Positioned(
-          left: 10,
-          right: 10,
-          bottom: 9,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'THE FAMILY',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -.3,
-                ),
-              ),
-              const Text(
-                'Drama  ·  2025  ·  2h 04m',
-                style: TextStyle(fontSize: 7, color: Colors.white70),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _orange,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  '▶  Explore now',
-                  style: TextStyle(fontSize: 7, fontWeight: FontWeight.w800),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-class _ShowcaseNavigation extends StatelessWidget {
-  const _ShowcaseNavigation({required this.selected, required this.onNavigate});
-  final int selected;
-  final ValueChanged<int> onNavigate;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    height: 43,
-    decoration: const BoxDecoration(
-      color: Color(0xF20D0C0B),
-      border: Border(top: BorderSide(color: Color(0xFF272321))),
-    ),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: [
-        _ShowcaseNavItem(
-          icon: Icons.home_rounded,
-          label: 'Home',
-          index: 0,
-          selected: selected,
-          onTap: onNavigate,
-        ),
-        _ShowcaseNavItem(
-          icon: Icons.search_rounded,
-          label: 'Search',
-          index: 1,
-          selected: selected,
-          onTap: onNavigate,
-        ),
-        _ShowcaseNavItem(
-          icon: Icons.bookmark_border_rounded,
-          label: 'Saved',
-          index: 2,
-          selected: selected,
-          onTap: onNavigate,
-        ),
-        _ShowcaseNavItem(
-          icon: Icons.chat_bubble_outline_rounded,
-          label: 'Chat',
-          index: 3,
-          selected: selected,
-          onTap: onNavigate,
-        ),
-        _ShowcaseNavItem(
-          icon: Icons.person_outline_rounded,
-          label: 'Profile',
-          index: 4,
-          selected: selected,
-          onTap: onNavigate,
-        ),
-      ],
-    ),
-  );
-}
-
-class _ShowcaseNavItem extends StatelessWidget {
-  const _ShowcaseNavItem({
-    required this.icon,
-    required this.label,
-    required this.index,
-    required this.selected,
-    required this.onTap,
-  });
-  final IconData icon;
-  final String label;
-  final int index, selected;
-  final ValueChanged<int> onTap;
-
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: () => onTap(index),
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(icon, color: selected == index ? _orange : _muted, size: 14),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 6,
-            color: selected == index ? _orange : _muted,
-            fontWeight: selected == index ? FontWeight.w800 : FontWeight.w500,
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-class _ShowcaseImage extends StatelessWidget {
-  const _ShowcaseImage({required this.image, required this.radius});
-  final int image;
-  final double radius;
-
-  @override
-  Widget build(BuildContext context) => ClipRRect(
-    borderRadius: BorderRadius.circular(radius),
-    child: Image.network(
-      _demoStills[image],
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => const DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF693000), Color(0xFF17100B)],
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-class _ZombiePosterArt extends StatelessWidget {
-  const _ZombiePosterArt();
-
-  @override
-  Widget build(BuildContext context) => Container(
-    decoration: const BoxDecoration(
-      gradient: RadialGradient(
-        center: Alignment(.15, -.2),
-        radius: 1.1,
-        colors: [Color(0xFF3A0A08), Color(0xFF150706), Color(0xFF050505)],
-      ),
-    ),
-    child: Stack(
-      fit: StackFit.expand,
-      children: [
-        Center(
-          child: Icon(
-            Icons.coronavirus_rounded,
-            size: 188,
-            color: const Color(0xFFE71922).withOpacity(.82),
-          ),
-        ),
-        const Positioned(
-          left: 12,
-          top: 14,
-          child: Text(
-            'A NEW WORLD. A NEW FEAR.',
-            style: TextStyle(
-              fontSize: 6,
-              letterSpacing: 1.2,
-              color: Colors.white70,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-        Positioned(
-          right: 11,
-          bottom: 13,
-          child: Icon(
-            Icons.broken_image_outlined,
-            size: 35,
-            color: Colors.white.withOpacity(.28),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-class _MiniPoster extends StatelessWidget {
-  const _MiniPoster({
-    required this.title,
-    required this.image,
-    required this.rating,
-  });
-  final String title;
-  final int image;
-  final String rating;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 68,
-    margin: const EdgeInsets.only(right: 7),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              _ShowcaseImage(image: image, radius: 7),
-              Positioned(
-                left: 4,
-                bottom: 4,
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.star_rounded,
-                      color: Color(0xFFFFB331),
-                      size: 9,
-                    ),
-                    Text(
-                      rating,
-                      style: const TextStyle(
-                        fontSize: 6,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 7, fontWeight: FontWeight.w700),
-        ),
-      ],
-    ),
-  );
-}
-
-class _CompactTitleRow extends StatelessWidget {
-  const _CompactTitleRow({required this.title, required this.subtitle});
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 6),
-    child: Row(
-      children: [
-        Container(
-          width: 34,
-          height: 35,
-          decoration: BoxDecoration(
-            color: _panelRaised,
-            borderRadius: BorderRadius.circular(5),
-          ),
-          child: const Icon(Icons.movie_outlined, color: _orange, size: 14),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 7,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: const TextStyle(fontSize: 6, color: _muted),
-              ),
-            ],
-          ),
-        ),
-        const Icon(Icons.chevron_right, color: _muted, size: 12),
-      ],
-    ),
-  );
-}
-
-class _RoundAction extends StatelessWidget {
-  const _RoundAction({required this.icon});
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 23,
-    height: 23,
-    decoration: BoxDecoration(color: _panelRaised, shape: BoxShape.circle),
-    child: Icon(icon, size: 12, color: Colors.white70),
-  );
-}
-
-class _ShowcaseChip extends StatelessWidget {
-  const _ShowcaseChip(this.label, {this.selected = false});
+class _CategoryChip extends StatelessWidget {
+  const _CategoryChip({required this.label, required this.selected, required this.onTap});
   final String label;
   final bool selected;
+  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(right: 5),
-    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-    decoration: BoxDecoration(
-      color: selected ? _orange : _panel,
-      borderRadius: BorderRadius.circular(15),
-    ),
-    child: Text(
-      label,
-      style: TextStyle(
-        fontSize: 7,
-        fontWeight: FontWeight.w700,
-        color: selected ? Colors.white : Colors.white70,
+  Widget build(BuildContext context) => InkWell(
+    borderRadius: BorderRadius.circular(18),
+    onTap: onTap,
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 160),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+      decoration: BoxDecoration(
+        color: selected ? _orange : _panel,
+        borderRadius: BorderRadius.circular(18),
       ),
+      child: Text(label, style: TextStyle(fontSize: 11, color: selected ? Colors.white : Colors.white70, fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
     ),
   );
 }
@@ -1154,121 +312,25 @@ class _PlayButton extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     width: size,
     height: size,
-    decoration: BoxDecoration(
-      color: _orange,
-      shape: BoxShape.circle,
-      boxShadow: [BoxShadow(color: _orange.withOpacity(.45), blurRadius: 17)],
-    ),
-    child: Icon(
-      Icons.play_arrow_rounded,
-      size: size * .62,
-      color: Colors.white,
-    ),
+    decoration: BoxDecoration(color: _orange, shape: BoxShape.circle, boxShadow: [BoxShadow(color: _orange.withOpacity(.4), blurRadius: 17)]),
+    child: Icon(Icons.play_arrow_rounded, size: size * .62, color: Colors.white),
   );
 }
 
-class _SeasonChip extends StatelessWidget {
-  const _SeasonChip(this.label, {this.selected = false});
-  final String label;
-  final bool selected;
+class _ZombiePosterArt extends StatelessWidget {
+  const _ZombiePosterArt();
 
   @override
   Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(right: 5),
-    width: 23,
-    height: 23,
-    decoration: BoxDecoration(
-      color: selected ? _orange : _panel,
-      shape: BoxShape.circle,
-      border: Border.all(color: selected ? _orange : _panelRaised),
+    decoration: const BoxDecoration(
+      gradient: RadialGradient(center: Alignment(.15, -.2), radius: 1.1, colors: [Color(0xFF3A0A08), Color(0xFF150706), Color(0xFF050505)]),
     ),
-    child: Center(
-      child: Text(
-        label,
-        style: const TextStyle(fontSize: 6, fontWeight: FontWeight.w700),
-      ),
-    ),
+    child: Stack(fit: StackFit.expand, children: [
+      Center(child: Icon(Icons.coronavirus_rounded, size: 188, color: const Color(0xFFE71922).withOpacity(.82))),
+      const Positioned(left: 12, top: 14, child: Text('A NEW WORLD. A NEW FEAR.', style: TextStyle(fontSize: 6, letterSpacing: 1.2, color: Colors.white70, fontWeight: FontWeight.w700))),
+    ]),
   );
 }
-
-class _EpisodeRow extends StatelessWidget {
-  const _EpisodeRow({
-    required this.title,
-    required this.number,
-    required this.image,
-  });
-  final String title;
-  final String number;
-  final int image;
-
-  @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      SizedBox(
-        width: 65,
-        height: 42,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            _ShowcaseImage(image: image, radius: 6),
-            const Center(
-              child: Icon(
-                Icons.play_circle_fill_rounded,
-                color: _orange,
-                size: 18,
-              ),
-            ),
-          ],
-        ),
-      ),
-      const SizedBox(width: 6),
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(number, style: const TextStyle(fontSize: 6, color: _muted)),
-            const SizedBox(height: 2),
-            Text(
-              title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 7, fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
-      ),
-      const Icon(Icons.download_outlined, color: _muted, size: 13),
-    ],
-  );
-}
-
-class _CastDot extends StatelessWidget {
-  const _CastDot({required this.name});
-  final String name;
-
-  @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      CircleAvatar(
-        radius: 16,
-        backgroundColor: _panelRaised,
-        child: Icon(
-          Icons.person_rounded,
-          size: 17,
-          color: Colors.white.withOpacity(.75),
-        ),
-      ),
-      const SizedBox(height: 3),
-      Text(
-        name,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontSize: 6, color: Colors.white70),
-      ),
-    ],
-  );
-}
-
 class _AppHeader extends StatelessWidget {
   const _AppHeader({required this.onMessages});
   final VoidCallback onMessages;
@@ -1631,19 +693,38 @@ class _SignInPage extends StatelessWidget {
 class _HomePage extends StatelessWidget {
   const _HomePage({
     required this.onMovie,
+    required this.isSaved,
+    required this.selectedCategory,
+    required this.onCategoryChanged,
     required this.onWatchlist,
     required this.onSearch,
     required this.onDownloads,
     required this.onMessages,
   });
   final VoidCallback onMovie;
+  final bool isSaved;
+  final String selectedCategory;
+  final ValueChanged<String> onCategoryChanged;
   final VoidCallback onWatchlist;
   final VoidCallback onSearch;
   final VoidCallback onDownloads;
   final VoidCallback onMessages;
 
   @override
-  Widget build(BuildContext context) => ListView(
+  Widget build(BuildContext context) {
+    final allTitles = <_DemoTitle>[
+      const _DemoTitle('28 YEARS LATER', 0, '8.7', 'Movies', _purple),
+      const _DemoTitle('LIFE OF CHUCK', 1, '8.1', 'Movies', _panelRaised),
+      const _DemoTitle('JURASSIC WORLD', 3, '7.8', 'Movies', _orange),
+      const _DemoTitle('FRIENDS', 4, '8.9', 'Series', Color(0xFF332C24)),
+      const _DemoTitle('THE FALL', 2, '7.9', 'Movies', Color(0xFF25201D)),
+      const _DemoTitle('THE BEAR', 3, '8.6', 'TV show', Color(0xFF26302D)),
+    ];
+    final visibleTitles = selectedCategory == 'All'
+        ? allTitles
+        : allTitles.where((title) => title.category == selectedCategory).toList();
+
+    return ListView(
     padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
     children: [
       Row(
@@ -1682,19 +763,28 @@ class _HomePage extends StatelessWidget {
         ],
       ),
       const SizedBox(height: 7),
-      const SingleChildScrollView(
+      SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            _ShowcaseChip('All', selected: true),
-            _ShowcaseChip('Movies'),
-            _ShowcaseChip('Series'),
-            _ShowcaseChip('TV show'),
+            for (final category in ['All', 'Movies', 'Series', 'TV show'])
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: _CategoryChip(
+                  label: category,
+                  selected: selectedCategory == category,
+                  onTap: () => onCategoryChanged(category),
+                ),
+              ),
           ],
         ),
       ),
       const SizedBox(height: 15),
-      _FeaturedMovie(onDetails: onMovie),
+      _FeaturedMovie(
+        isSaved: isSaved,
+        onDetails: onMovie,
+        onWatchlist: onWatchlist,
+      ),
       const SizedBox(height: 24),
       _SectionHeader('Trending Now', onAction: onSearch),
       const SizedBox(height: 12),
@@ -1702,32 +792,17 @@ class _HomePage extends StatelessWidget {
         height: 174,
         child: ListView(
           scrollDirection: Axis.horizontal,
-          children: const [
-            _MoviePoster(
-              title: 'NIGHT SHIFT',
-              color: _purple,
-              image: 0,
-              rating: '4.8',
-            ),
-            _MoviePoster(
-              title: 'RED PLANET',
-              color: _panelRaised,
-              image: 3,
-              rating: '4.6',
-            ),
-            _MoviePoster(
-              title: 'AFTER LIGHT',
-              color: _orange,
-              image: 1,
-              rating: '4.5',
-            ),
-            _MoviePoster(
-              title: 'WILD TIDE',
-              color: Color(0xFF332C48),
-              image: 4,
-              rating: '4.7',
-            ),
-          ],
+          children: visibleTitles
+              .map(
+                (title) => _MoviePoster(
+                  title: title.title,
+                  color: title.color,
+                  image: title.image,
+                  rating: title.rating,
+                  onTap: onMovie,
+                ),
+              )
+              .toList(),
         ),
       ),
       const SizedBox(height: 20),
@@ -1737,30 +812,34 @@ class _HomePage extends StatelessWidget {
         height: 174,
         child: ListView(
           scrollDirection: Axis.horizontal,
-          children: const [
+          children: [
             _MoviePoster(
               title: 'QUIET EARTH',
               color: Color(0xFF252331),
               image: 2,
               rating: '4.4',
+              onTap: onMovie,
             ),
             _MoviePoster(
-              title: 'LAST HORIZON',
+              title: '28 YEARS LATER',
               color: _purple,
-              image: 4,
-              rating: '4.9',
-            ),
-            _MoviePoster(
-              title: 'AFTER LIGHT',
-              color: _orange,
               image: 0,
-              rating: '4.5',
+              rating: '8.7',
+              onTap: onMovie,
             ),
             _MoviePoster(
-              title: 'BLUE HOUR',
+              title: 'LIFE OF CHUCK',
+              color: _orange,
+              image: 1,
+              rating: '8.1',
+              onTap: onMovie,
+            ),
+            _MoviePoster(
+              title: 'FRIENDS',
               color: Color(0xFF26334B),
-              image: 3,
-              rating: '4.6',
+              image: 4,
+              rating: '8.9',
+              onTap: onMovie,
             ),
           ],
         ),
@@ -1787,11 +866,27 @@ class _HomePage extends StatelessWidget {
       ),
     ],
   );
+  }
+}
+
+class _DemoTitle {
+  const _DemoTitle(this.title, this.image, this.rating, this.category, this.color);
+  final String title;
+  final int image;
+  final String rating;
+  final String category;
+  final Color color;
 }
 
 class _FeaturedMovie extends StatelessWidget {
-  const _FeaturedMovie({required this.onDetails});
+  const _FeaturedMovie({
+    required this.isSaved,
+    required this.onDetails,
+    required this.onWatchlist,
+  });
+  final bool isSaved;
   final VoidCallback onDetails;
+  final VoidCallback onWatchlist;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -1831,6 +926,19 @@ class _FeaturedMovie extends StatelessWidget {
           ),
         ),
         const Center(child: _PlayButton(size: 48)),
+        Positioned(
+          top: 8,
+          right: 8,
+          child: IconButton.filledTonal(
+            tooltip: isSaved ? 'Remove from watchlist' : 'Add to watchlist',
+            onPressed: onWatchlist,
+            icon: Icon(isSaved ? Icons.favorite : Icons.favorite_border),
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.black.withOpacity(.38),
+              foregroundColor: isSaved ? _orange : Colors.white,
+            ),
+          ),
+        ),
         Positioned(
           left: 16,
           top: 15,
@@ -2753,19 +1861,18 @@ class _MoviePoster extends StatelessWidget {
     required this.color,
     required this.image,
     required this.rating,
+    required this.onTap,
   });
   final String title;
   final Color color;
   final int image;
   final String rating;
+  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Movie details will open from the catalogue.'),
-      ),
-    ),
+  Widget build(BuildContext context) => InkWell(
+    borderRadius: BorderRadius.circular(7),
+    onTap: onTap,
     child: Container(
       width: 118,
       margin: const EdgeInsets.only(right: 10),

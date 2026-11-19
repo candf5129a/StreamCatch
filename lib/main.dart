@@ -1,13 +1,15 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 void main() => runApp(const StreamCatchApp());
 
-const _background = Color(0xFF080808);
-const _panel = Color(0xFF191919);
-const _panelRaised = Color(0xFF262626);
-const _orange = Color(0xFFE50914);
-const _purple = Color(0xFF6750A4);
-const _muted = Color(0xFF9B9B9B);
+const _background = Color(0xFF080706);
+const _panel = Color(0xFF151311);
+const _panelRaised = Color(0xFF24211F);
+const _orange = Color(0xFFFF6A00);
+const _purple = Color(0xFF392116);
+const _muted = Color(0xFF9A9692);
 
 const _demoStills = <String>[
   'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=600&q=85',
@@ -76,8 +78,12 @@ class _StreamCatchShell extends StatefulWidget {
 }
 
 class _StreamCatchShellState extends State<_StreamCatchShell> {
-  _Page _page = _Page.welcome;
+  _Page _page = _Page.home;
   _Page _previousPage = _Page.home;
+  final _messageController = TextEditingController();
+  final List<String> _conversationMessages = [
+    'Not yet! Adding it to my list now.',
+  ];
   int _libraryTab = 0;
   String _searchQuery = '';
   final Set<String> _savedTitles = <String>{};
@@ -89,10 +95,20 @@ class _StreamCatchShellState extends State<_StreamCatchShell> {
   void dispose() {
     _searchController.dispose();
     _linkController.dispose();
+    _messageController.dispose();
     super.dispose();
   }
 
   void _go(_Page page) => setState(() => _page = page);
+
+  void _sendMessage() {
+    final message = _messageController.text.trim();
+    if (message.isEmpty) return;
+    setState(() {
+      _conversationMessages.add(message);
+      _messageController.clear();
+    });
+  }
 
   void _openDetails() {
     setState(() {
@@ -140,9 +156,9 @@ class _StreamCatchShellState extends State<_StreamCatchShell> {
     _Page.home => _HomePage(
       onMovie: _openDetails,
       onWatchlist: () {
-        _toggleSaved('The Last Horizon');
+        _toggleSaved('28 Years Later');
         _message(
-          _savedTitles.contains('The Last Horizon')
+          _savedTitles.contains('28 Years Later')
               ? 'Added to My Library.'
               : 'Removed from My Library.',
         );
@@ -158,9 +174,9 @@ class _StreamCatchShellState extends State<_StreamCatchShell> {
       onMovie: _openDetails,
     ),
     _Page.details => _MovieDetailsPage(
-      isSaved: _savedTitles.contains('The Last Horizon'),
+      isSaved: _savedTitles.contains('28 Years Later'),
       onBack: () => _go(_previousPage),
-      onWatchlist: () => _toggleSaved('The Last Horizon'),
+      onWatchlist: () => _toggleSaved('28 Years Later'),
       onTrailer: () => _message(
         'Official trailer playback will be added with the authorized provider integration.',
       ),
@@ -195,7 +211,12 @@ class _StreamCatchShellState extends State<_StreamCatchShell> {
     _Page.messages => _MessagesPage(
       onConversation: () => _go(_Page.conversation),
     ),
-    _Page.conversation => _ConversationPage(onBack: () => _go(_Page.messages)),
+    _Page.conversation => _ConversationPage(
+      controller: _messageController,
+      messages: _conversationMessages,
+      onSend: _sendMessage,
+      onBack: () => _go(_Page.messages),
+    ),
     _Page.watchTogether => _WatchTogetherPage(
       onRoom: () => _go(_Page.watchRoom),
     ),
@@ -209,14 +230,13 @@ class _StreamCatchShellState extends State<_StreamCatchShell> {
 
   int get _selectedTab => switch (_page) {
     _Page.search => 1,
-    _Page.library => 2,
+    _Page.messages || _Page.conversation => 2,
+    _Page.library => 3,
     _Page.profile ||
     _Page.downloads ||
     _Page.communities ||
-    _Page.messages ||
-    _Page.conversation ||
     _Page.watchTogether ||
-    _Page.watchRoom => 3,
+    _Page.watchRoom => 4,
     _ => 0,
   };
 
@@ -229,6 +249,19 @@ class _StreamCatchShellState extends State<_StreamCatchShell> {
         _page != _Page.conversation &&
         _page != _Page.watchRoom;
     final wide = MediaQuery.sizeOf(context).width > 720;
+    if (MediaQuery.sizeOf(context).width >= 620 && _page == _Page.home) {
+      return Scaffold(
+        body: _DesignBoard(
+          onNavigate: (index) => _go(switch (index) {
+            0 => _Page.home,
+            1 => _Page.search,
+            2 => _Page.library,
+            3 => _Page.messages,
+            _ => _Page.profile,
+          }),
+        ),
+      );
+    }
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -236,7 +269,7 @@ class _StreamCatchShellState extends State<_StreamCatchShell> {
             constraints: BoxConstraints(maxWidth: wide ? 820 : 520),
             child: Column(
               children: [
-                if (isMainPage)
+                if (isMainPage && _page != _Page.home)
                   _AppHeader(onMessages: () => _go(_Page.messages)),
                 Expanded(child: _buildPage()),
               ],
@@ -250,13 +283,990 @@ class _StreamCatchShellState extends State<_StreamCatchShell> {
               onSelect: (index) => _go(switch (index) {
                 0 => _Page.home,
                 1 => _Page.search,
-                2 => _Page.library,
+                2 => _Page.messages,
+                3 => _Page.library,
                 _ => _Page.profile,
               }),
             )
           : null,
     );
   }
+}
+
+class _DesignBoard extends StatelessWidget {
+  const _DesignBoard({required this.onNavigate});
+  final ValueChanged<int> onNavigate;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, box) {
+      final phoneHeight = (box.maxHeight * .87).clamp(340.0, 670.0).toDouble();
+      final phoneWidth = math.min(phoneHeight * .48, box.maxWidth * .28);
+      return Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(.25, .9),
+            radius: 1.1,
+            colors: [Color(0xFFB63C00), Color(0xFF401800), Color(0xFF080706)],
+            stops: [0, .45, 1],
+          ),
+        ),
+        child: Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Transform.rotate(
+                angle: -.13,
+                child: _ShowcasePhone(
+                  width: phoneWidth,
+                  height: phoneHeight * .91,
+                  screen: const _ShowcaseHome(),
+                  navigation: _ShowcaseNavigation(
+                    selected: 0,
+                    onNavigate: onNavigate,
+                  ),
+                ),
+              ),
+              SizedBox(width: phoneWidth * .09),
+              Transform.rotate(
+                angle: .025,
+                child: _ShowcasePhone(
+                  width: phoneWidth,
+                  height: phoneHeight,
+                  screen: const _ShowcaseMovie(),
+                ),
+              ),
+              SizedBox(width: phoneWidth * .09),
+              Transform.rotate(
+                angle: .13,
+                child: _ShowcasePhone(
+                  width: phoneWidth,
+                  height: phoneHeight * .91,
+                  screen: const _ShowcaseEpisodes(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class _ShowcasePhone extends StatelessWidget {
+  const _ShowcasePhone({
+    required this.width,
+    required this.height,
+    required this.screen,
+    this.navigation,
+  });
+  final double width;
+  final double height;
+  final Widget screen;
+  final Widget? navigation;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: width,
+    height: height,
+    decoration: BoxDecoration(
+      color: const Color(0xFF10100F),
+      borderRadius: BorderRadius.circular(32),
+      border: Border.all(color: Colors.white.withOpacity(.16), width: 1.2),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(.65),
+          blurRadius: 34,
+          offset: const Offset(0, 18),
+        ),
+        BoxShadow(
+          color: _orange.withOpacity(.12),
+          blurRadius: 42,
+          spreadRadius: 2,
+        ),
+      ],
+    ),
+    clipBehavior: Clip.antiAlias,
+    child: Stack(
+      children: [
+        Positioned.fill(child: screen),
+        Positioned(
+          top: 9,
+          left: 15,
+          right: 15,
+          child: Row(
+            children: [
+              const Text(
+                '9:41',
+                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700),
+              ),
+              const Spacer(),
+              Icon(
+                Icons.signal_cellular_alt,
+                size: 11,
+                color: Colors.white.withOpacity(.9),
+              ),
+              const SizedBox(width: 3),
+              Icon(Icons.wifi, size: 11, color: Colors.white.withOpacity(.9)),
+              const SizedBox(width: 3),
+              Icon(
+                Icons.battery_full,
+                size: 13,
+                color: Colors.white.withOpacity(.9),
+              ),
+            ],
+          ),
+        ),
+        if (navigation != null)
+          Positioned(left: 0, right: 0, bottom: 0, child: navigation!),
+      ],
+    ),
+  );
+}
+
+class _ShowcaseHome extends StatelessWidget {
+  const _ShowcaseHome();
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(13, 29, 13, 48),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Hello, Mohshihi!',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Discover something great today',
+                    style: TextStyle(fontSize: 8, color: _muted),
+                  ),
+                ],
+              ),
+            ),
+            _RoundAction(icon: Icons.search_rounded),
+            const SizedBox(width: 6),
+            _RoundAction(icon: Icons.notifications_none_rounded),
+          ],
+        ),
+        const SizedBox(height: 13),
+        const SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _ShowcaseChip('All', selected: true),
+              _ShowcaseChip('Movies'),
+              _ShowcaseChip('Series'),
+              _ShowcaseChip('TV show'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _ShowcaseFeature(),
+                const SizedBox(height: 14),
+                const Row(
+                  children: [
+                    Text(
+                      'Trending Now',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Spacer(),
+                    Text(
+                      'See all  ›',
+                      style: TextStyle(fontSize: 8, color: _orange),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 112,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: const [
+                      _MiniPoster(
+                        title: 'Life of Chuck',
+                        image: 1,
+                        rating: '8.1',
+                      ),
+                      _MiniPoster(
+                        title: 'Jurassic World',
+                        image: 3,
+                        rating: '7.8',
+                      ),
+                      _MiniPoster(title: 'The Family', image: 4, rating: '7.6'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 11),
+                const Text(
+                  'Popular this week',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 7),
+                const _CompactTitleRow(
+                  title: 'The Fall',
+                  subtitle: '2025  ·  Mystery',
+                ),
+                const _CompactTitleRow(
+                  title: 'Jumanji: Wild World',
+                  subtitle: '2024  ·  Adventure',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _ShowcaseMovie extends StatelessWidget {
+  const _ShowcaseMovie();
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(15, 31, 15, 13),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.arrow_back_ios_new_rounded, size: 13),
+            const Spacer(),
+            const Text(
+              'PANDY BIRD  ·  ALEX GARLAND  ·  A24 FILMS',
+              style: TextStyle(
+                fontSize: 5,
+                letterSpacing: .6,
+                color: Colors.white70,
+              ),
+            ),
+            const Spacer(),
+            const Icon(Icons.favorite_border, size: 14, color: Colors.white70),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Expanded(
+          flex: 5,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _ZombiePosterArt(),
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Color(0xCC000000)],
+                  ),
+                ),
+              ),
+              const Center(child: _PlayButton(size: 48)),
+              const Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: 13),
+                  child: Text(
+                    '28 YEARS LATER',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 22,
+                      height: .92,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -1.1,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        const Row(
+          children: [
+            Icon(Icons.star_rounded, color: Color(0xFFFFB331), size: 13),
+            SizedBox(width: 2),
+            Text(
+              '8.6',
+              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800),
+            ),
+            SizedBox(width: 5),
+            Text(
+              'Horror · Thriller · 1h 55m',
+              style: TextStyle(fontSize: 7, color: _muted),
+            ),
+          ],
+        ),
+        const SizedBox(height: 11),
+        const Row(
+          children: [
+            Text(
+              'The Plot',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+            ),
+            Spacer(),
+            Text('Read More  ›', style: TextStyle(fontSize: 8, color: _orange)),
+          ],
+        ),
+        const SizedBox(height: 5),
+        const Text(
+          'A group of survivors emerge from a quarantine zone to discover that the world has changed forever.',
+          maxLines: 4,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 8, height: 1.4, color: Colors.white70),
+        ),
+        const SizedBox(height: 11),
+        const Row(
+          children: [
+            Text(
+              'Cast',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+            ),
+            Spacer(),
+            Text('See All  ›', style: TextStyle(fontSize: 8, color: _orange)),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const Row(
+          children: [
+            Expanded(child: _CastDot(name: 'Jodie Comer')),
+            Expanded(child: _CastDot(name: 'Ralph Fiennes')),
+            Expanded(child: _CastDot(name: 'A. Johnson')),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+class _ShowcaseEpisodes extends StatelessWidget {
+  const _ShowcaseEpisodes();
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(12, 29, 12, 12),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 4,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _ShowcaseImage(image: 4, radius: 12),
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0x22000000), Color(0xDD000000)],
+                  ),
+                ),
+              ),
+              const Center(child: _PlayButton(size: 42)),
+              const Positioned(
+                left: 9,
+                bottom: 10,
+                child: Text(
+                  'WATCH TRAILER',
+                  style: TextStyle(
+                    fontSize: 7,
+                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        const Text(
+          'Friends',
+          style: TextStyle(
+            fontSize: 19,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -.5,
+          ),
+        ),
+        const SizedBox(height: 3),
+        const Text(
+          'S1:E1  ·  The One Where Monica Gets a Roommate',
+          style: TextStyle(fontSize: 7, color: _muted),
+        ),
+        const SizedBox(height: 7),
+        const Row(
+          children: [
+            Icon(Icons.star_rounded, color: Color(0xFFFFB331), size: 13),
+            SizedBox(width: 3),
+            Text(
+              '8.9',
+              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800),
+            ),
+            Text(' (10 Reviews)', style: TextStyle(fontSize: 7, color: _muted)),
+          ],
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Follow six friends as their lives and relationships unfold in New York City.',
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 8, height: 1.4, color: Colors.white70),
+        ),
+        const SizedBox(height: 11),
+        const Text(
+          'Episodes',
+          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 7),
+        const SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _SeasonChip('S1', selected: true),
+              _SeasonChip('S2'),
+              _SeasonChip('S3'),
+              _SeasonChip('S4'),
+              _SeasonChip('S5'),
+              _SeasonChip('S6'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        const _EpisodeRow(
+          title: 'The One Where Monica Gets a Roommate',
+          number: 'Episode 1  ·  22 min',
+          image: 1,
+        ),
+        const SizedBox(height: 6),
+        const _EpisodeRow(
+          title: 'The One with the Sonogram',
+          number: 'Episode 2  ·  23 min',
+          image: 3,
+        ),
+        const SizedBox(height: 6),
+        const _EpisodeRow(
+          title: 'The One with the Thumb',
+          number: 'Episode 3  ·  22 min',
+          image: 4,
+        ),
+      ],
+    ),
+  );
+}
+
+class _ShowcaseFeature extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => Container(
+    height: 172,
+    clipBehavior: Clip.antiAlias,
+    decoration: BoxDecoration(
+      color: _panelRaised,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Stack(
+      fit: StackFit.expand,
+      children: [
+        _ShowcaseImage(image: 2, radius: 0),
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0x22000000), Color(0xE6000000)],
+            ),
+          ),
+        ),
+        const Positioned(
+          left: 9,
+          top: 8,
+          child: Text(
+            'FEATURED TONIGHT',
+            style: TextStyle(
+              fontSize: 6,
+              letterSpacing: 1.1,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        const Center(child: _PlayButton(size: 37)),
+        Positioned(
+          left: 10,
+          right: 10,
+          bottom: 9,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'THE FAMILY',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -.3,
+                ),
+              ),
+              const Text(
+                'Drama  ·  2025  ·  2h 04m',
+                style: TextStyle(fontSize: 7, color: Colors.white70),
+              ),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _orange,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  '▶  Explore now',
+                  style: TextStyle(fontSize: 7, fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _ShowcaseNavigation extends StatelessWidget {
+  const _ShowcaseNavigation({required this.selected, required this.onNavigate});
+  final int selected;
+  final ValueChanged<int> onNavigate;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    height: 43,
+    decoration: const BoxDecoration(
+      color: Color(0xF20D0C0B),
+      border: Border(top: BorderSide(color: Color(0xFF272321))),
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        _ShowcaseNavItem(
+          icon: Icons.home_rounded,
+          label: 'Home',
+          index: 0,
+          selected: selected,
+          onTap: onNavigate,
+        ),
+        _ShowcaseNavItem(
+          icon: Icons.search_rounded,
+          label: 'Search',
+          index: 1,
+          selected: selected,
+          onTap: onNavigate,
+        ),
+        _ShowcaseNavItem(
+          icon: Icons.bookmark_border_rounded,
+          label: 'Saved',
+          index: 2,
+          selected: selected,
+          onTap: onNavigate,
+        ),
+        _ShowcaseNavItem(
+          icon: Icons.chat_bubble_outline_rounded,
+          label: 'Chat',
+          index: 3,
+          selected: selected,
+          onTap: onNavigate,
+        ),
+        _ShowcaseNavItem(
+          icon: Icons.person_outline_rounded,
+          label: 'Profile',
+          index: 4,
+          selected: selected,
+          onTap: onNavigate,
+        ),
+      ],
+    ),
+  );
+}
+
+class _ShowcaseNavItem extends StatelessWidget {
+  const _ShowcaseNavItem({
+    required this.icon,
+    required this.label,
+    required this.index,
+    required this.selected,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final int index, selected;
+  final ValueChanged<int> onTap;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: () => onTap(index),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, color: selected == index ? _orange : _muted, size: 14),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 6,
+            color: selected == index ? _orange : _muted,
+            fontWeight: selected == index ? FontWeight.w800 : FontWeight.w500,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _ShowcaseImage extends StatelessWidget {
+  const _ShowcaseImage({required this.image, required this.radius});
+  final int image;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) => ClipRRect(
+    borderRadius: BorderRadius.circular(radius),
+    child: Image.network(
+      _demoStills[image],
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => const DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF693000), Color(0xFF17100B)],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _ZombiePosterArt extends StatelessWidget {
+  const _ZombiePosterArt();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    decoration: const BoxDecoration(
+      gradient: RadialGradient(
+        center: Alignment(.15, -.2),
+        radius: 1.1,
+        colors: [Color(0xFF3A0A08), Color(0xFF150706), Color(0xFF050505)],
+      ),
+    ),
+    child: Stack(
+      fit: StackFit.expand,
+      children: [
+        Center(
+          child: Icon(
+            Icons.coronavirus_rounded,
+            size: 188,
+            color: const Color(0xFFE71922).withOpacity(.82),
+          ),
+        ),
+        const Positioned(
+          left: 12,
+          top: 14,
+          child: Text(
+            'A NEW WORLD. A NEW FEAR.',
+            style: TextStyle(
+              fontSize: 6,
+              letterSpacing: 1.2,
+              color: Colors.white70,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        Positioned(
+          right: 11,
+          bottom: 13,
+          child: Icon(
+            Icons.broken_image_outlined,
+            size: 35,
+            color: Colors.white.withOpacity(.28),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _MiniPoster extends StatelessWidget {
+  const _MiniPoster({
+    required this.title,
+    required this.image,
+    required this.rating,
+  });
+  final String title;
+  final int image;
+  final String rating;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 68,
+    margin: const EdgeInsets.only(right: 7),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _ShowcaseImage(image: image, radius: 7),
+              Positioned(
+                left: 4,
+                bottom: 4,
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.star_rounded,
+                      color: Color(0xFFFFB331),
+                      size: 9,
+                    ),
+                    Text(
+                      rating,
+                      style: const TextStyle(
+                        fontSize: 6,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 7, fontWeight: FontWeight.w700),
+        ),
+      ],
+    ),
+  );
+}
+
+class _CompactTitleRow extends StatelessWidget {
+  const _CompactTitleRow({required this.title, required this.subtitle});
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 6),
+    child: Row(
+      children: [
+        Container(
+          width: 34,
+          height: 35,
+          decoration: BoxDecoration(
+            color: _panelRaised,
+            borderRadius: BorderRadius.circular(5),
+          ),
+          child: const Icon(Icons.movie_outlined, color: _orange, size: 14),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 7,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: const TextStyle(fontSize: 6, color: _muted),
+              ),
+            ],
+          ),
+        ),
+        const Icon(Icons.chevron_right, color: _muted, size: 12),
+      ],
+    ),
+  );
+}
+
+class _RoundAction extends StatelessWidget {
+  const _RoundAction({required this.icon});
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 23,
+    height: 23,
+    decoration: BoxDecoration(color: _panelRaised, shape: BoxShape.circle),
+    child: Icon(icon, size: 12, color: Colors.white70),
+  );
+}
+
+class _ShowcaseChip extends StatelessWidget {
+  const _ShowcaseChip(this.label, {this.selected = false});
+  final String label;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(right: 5),
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+    decoration: BoxDecoration(
+      color: selected ? _orange : _panel,
+      borderRadius: BorderRadius.circular(15),
+    ),
+    child: Text(
+      label,
+      style: TextStyle(
+        fontSize: 7,
+        fontWeight: FontWeight.w700,
+        color: selected ? Colors.white : Colors.white70,
+      ),
+    ),
+  );
+}
+
+class _PlayButton extends StatelessWidget {
+  const _PlayButton({this.size = 40});
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: size,
+    height: size,
+    decoration: BoxDecoration(
+      color: _orange,
+      shape: BoxShape.circle,
+      boxShadow: [BoxShadow(color: _orange.withOpacity(.45), blurRadius: 17)],
+    ),
+    child: Icon(
+      Icons.play_arrow_rounded,
+      size: size * .62,
+      color: Colors.white,
+    ),
+  );
+}
+
+class _SeasonChip extends StatelessWidget {
+  const _SeasonChip(this.label, {this.selected = false});
+  final String label;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(right: 5),
+    width: 23,
+    height: 23,
+    decoration: BoxDecoration(
+      color: selected ? _orange : _panel,
+      shape: BoxShape.circle,
+      border: Border.all(color: selected ? _orange : _panelRaised),
+    ),
+    child: Center(
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 6, fontWeight: FontWeight.w700),
+      ),
+    ),
+  );
+}
+
+class _EpisodeRow extends StatelessWidget {
+  const _EpisodeRow({
+    required this.title,
+    required this.number,
+    required this.image,
+  });
+  final String title;
+  final String number;
+  final int image;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      SizedBox(
+        width: 65,
+        height: 42,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            _ShowcaseImage(image: image, radius: 6),
+            const Center(
+              child: Icon(
+                Icons.play_circle_fill_rounded,
+                color: _orange,
+                size: 18,
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(width: 6),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(number, style: const TextStyle(fontSize: 6, color: _muted)),
+            const SizedBox(height: 2),
+            Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 7, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      ),
+      const Icon(Icons.download_outlined, color: _muted, size: 13),
+    ],
+  );
+}
+
+class _CastDot extends StatelessWidget {
+  const _CastDot({required this.name});
+  final String name;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      CircleAvatar(
+        radius: 16,
+        backgroundColor: _panelRaised,
+        child: Icon(
+          Icons.person_rounded,
+          size: 17,
+          color: Colors.white.withOpacity(.75),
+        ),
+      ),
+      const SizedBox(height: 3),
+      Text(
+        name,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontSize: 6, color: Colors.white70),
+      ),
+    ],
+  );
 }
 
 class _AppHeader extends StatelessWidget {
@@ -298,7 +1308,7 @@ class _BrandMark extends StatelessWidget {
     width: size,
     height: size,
     decoration: BoxDecoration(
-      color: _purple,
+      color: _orange,
       borderRadius: BorderRadius.circular(size * .15),
     ),
     child: Icon(
@@ -636,54 +1646,57 @@ class _HomePage extends StatelessWidget {
   Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
     children: [
-      const _Eyebrow('DISCOVER'),
-      const SizedBox(height: 7),
-      const Text(
-        'Stories worth staying in for.',
-        style: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -.5,
-        ),
+      Row(
+        children: [
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Hello, Mohshihi!',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -.35,
+                  ),
+                ),
+                SizedBox(height: 3),
+                Text(
+                  'Discover a story worth watching',
+                  style: TextStyle(color: _muted, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: onSearch,
+            icon: const Icon(Icons.search_rounded, color: Colors.white70),
+          ),
+          IconButton(
+            onPressed: onMessages,
+            icon: const Icon(
+              Icons.notifications_none_rounded,
+              color: Colors.white70,
+            ),
+          ),
+        ],
       ),
-      const SizedBox(height: 17),
-      _FeaturedMovie(onDetails: onMovie),
-      const SizedBox(height: 24),
-      const _SectionHeader('Hot genres'),
-      const SizedBox(height: 10),
-      const SizedBox(
-        height: 76,
+      const SizedBox(height: 7),
+      const SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            Expanded(
-              child: _GenreTile(
-                icon: Icons.directions_run_rounded,
-                label: 'Action',
-              ),
-            ),
-            Expanded(
-              child: _GenreTile(
-                icon: Icons.theater_comedy_outlined,
-                label: 'Comedy',
-              ),
-            ),
-            Expanded(
-              child: _GenreTile(
-                icon: Icons.favorite_border_rounded,
-                label: 'Romance',
-              ),
-            ),
-            Expanded(
-              child: _GenreTile(
-                icon: Icons.auto_awesome_outlined,
-                label: 'Fantasy',
-              ),
-            ),
+            _ShowcaseChip('All', selected: true),
+            _ShowcaseChip('Movies'),
+            _ShowcaseChip('Series'),
+            _ShowcaseChip('TV show'),
           ],
         ),
       ),
-      const SizedBox(height: 21),
-      _SectionHeader('Trending now', onAction: onSearch),
+      const SizedBox(height: 15),
+      _FeaturedMovie(onDetails: onMovie),
+      const SizedBox(height: 24),
+      _SectionHeader('Trending Now', onAction: onSearch),
       const SizedBox(height: 12),
       SizedBox(
         height: 174,
@@ -799,7 +1812,7 @@ class _FeaturedMovie extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [_purple, Color(0xFF5539B6), Color(0xFF33245F)],
+                colors: [Color(0xFF8A3900), Color(0xFF3F1E0A), _panel],
               ),
             ),
           ),
@@ -817,15 +1830,7 @@ class _FeaturedMovie extends StatelessWidget {
             ),
           ),
         ),
-        Positioned(
-          right: 12,
-          top: 40,
-          child: Icon(
-            Icons.movie_creation_outlined,
-            size: 110,
-            color: Colors.white.withOpacity(.15),
-          ),
-        ),
+        const Center(child: _PlayButton(size: 48)),
         Positioned(
           left: 16,
           top: 15,
@@ -836,7 +1841,7 @@ class _FeaturedMovie extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Text(
-              'STREAMCATCH PICK',
+              'STREAMCATCH ORIGINALS',
               style: TextStyle(
                 fontSize: 9,
                 letterSpacing: 1.3,
@@ -853,7 +1858,7 @@ class _FeaturedMovie extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'THE LAST HORIZON',
+                '28 YEARS LATER',
                 style: TextStyle(
                   fontSize: 21,
                   fontWeight: FontWeight.w800,
@@ -862,7 +1867,7 @@ class _FeaturedMovie extends StatelessWidget {
               ),
               const SizedBox(height: 3),
               const Text(
-                'Sci-Fi  ·  2026  ·  2h 08min',
+                'Horror  ·  2025  ·  1h 55min',
                 style: TextStyle(fontSize: 11, color: Colors.white70),
               ),
               const SizedBox(height: 11),
@@ -906,11 +1911,11 @@ class _SearchPage extends StatelessWidget {
       'Family',
     ];
     final catalog = [
-      'The Last Horizon',
-      'Night Shift',
-      'Red Planet',
-      'After Light',
-      'Wild Tide',
+      '28 Years Later',
+      'The Life of Chuck',
+      'Jurassic World',
+      'The Family',
+      'Friends',
     ];
     final results = query.isEmpty
         ? catalog
@@ -1004,7 +2009,7 @@ class _MovieDetailsPage extends StatelessWidget {
       ),
       const SizedBox(height: 5),
       const Text(
-        'THE LAST HORIZON',
+        '28 YEARS LATER',
         style: TextStyle(
           fontSize: 22,
           fontWeight: FontWeight.w800,
@@ -1012,23 +2017,40 @@ class _MovieDetailsPage extends StatelessWidget {
         ),
       ),
       const SizedBox(height: 12),
-      Container(
-        height: 215,
-        decoration: BoxDecoration(
-          color: _purple,
-          borderRadius: BorderRadius.circular(13),
-        ),
-        child: Center(
-          child: Icon(
-            Icons.movie_outlined,
-            size: 72,
-            color: Colors.white.withOpacity(.24),
-          ),
+      SizedBox(
+        height: 225,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const _ZombiePosterArt(),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0x22000000), Color(0xCC000000)],
+                ),
+              ),
+            ),
+            const Center(child: _PlayButton(size: 53)),
+            const Positioned(
+              left: 14,
+              bottom: 13,
+              child: Text(
+                '28 YEARS LATER',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -.7,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
       const SizedBox(height: 12),
       const Text(
-        '2026  ·  Sci-Fi  ·  2h 08min  ·  16+',
+        '2025  ·  Horror  ·  1h 55min  ·  18+',
         style: TextStyle(color: _muted, fontSize: 11),
       ),
       const SizedBox(height: 8),
@@ -1053,7 +2075,7 @@ class _MovieDetailsPage extends StatelessWidget {
       const _SectionHeader('Synopsis'),
       const SizedBox(height: 7),
       const Text(
-        'When a distant signal reaches Earth, a small crew must decide what humanity is willing to risk for a second chance.',
+        'Decades after a virus devastates the world, survivors face a new and terrifying reality beyond the quarantine zone.',
         style: TextStyle(color: _muted, height: 1.5, fontSize: 12),
       ),
       const SizedBox(height: 20),
@@ -1061,9 +2083,9 @@ class _MovieDetailsPage extends StatelessWidget {
       const SizedBox(height: 11),
       const Row(
         children: [
-          Expanded(child: _CastPerson(name: 'Amara Okafor')),
-          Expanded(child: _CastPerson(name: 'Daniel Cole')),
-          Expanded(child: _CastPerson(name: 'Nina Park')),
+          Expanded(child: _CastPerson(name: 'Jodie Comer')),
+          Expanded(child: _CastPerson(name: 'Ralph Fiennes')),
+          Expanded(child: _CastPerson(name: 'Aaron Taylor-Johnson')),
         ],
       ),
       const SizedBox(height: 18),
@@ -1094,8 +2116,8 @@ class _LibraryPage extends StatelessWidget {
         : selectedTab == 0
         ? savedTitles.toList()
         : selectedTab == 1
-        ? ['The Last Horizon', 'Red Planet']
-        : ['Night Shift'];
+        ? ['28 Years Later', 'Jurassic World']
+        : ['The Life of Chuck'];
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
       children: [
@@ -1426,7 +2448,15 @@ class _MessagesPage extends StatelessWidget {
 }
 
 class _ConversationPage extends StatelessWidget {
-  const _ConversationPage({required this.onBack});
+  const _ConversationPage({
+    required this.controller,
+    required this.messages,
+    required this.onSend,
+    required this.onBack,
+  });
+  final TextEditingController controller;
+  final List<String> messages;
+  final VoidCallback onSend;
   final VoidCallback onBack;
 
   @override
@@ -1451,35 +2481,49 @@ class _ConversationPage extends StatelessWidget {
         ),
       ),
       const Divider(height: 1, color: _panelRaised),
-      const Expanded(
-        child: Padding(
-          padding: EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _ChatBubble(
-                text: 'Have you watched The Last Horizon yet?',
-                sent: false,
+      Expanded(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            const _ChatBubble(
+              text: 'Have you watched 28 Years Later yet?',
+              sent: false,
+            ),
+            const SizedBox(height: 10),
+            ...messages.map(
+              (message) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _ChatBubble(text: message, sent: true),
               ),
-              SizedBox(height: 10),
-              _ChatBubble(
-                text: 'Not yet! Adding it to my list now.',
-                sent: true,
-              ),
-              SizedBox(height: 15),
-              _SharedMovieCard(),
-            ],
-          ),
+            ),
+            const SizedBox(height: 5),
+            const _SharedMovieCard(),
+          ],
         ),
       ),
       Padding(
         padding: const EdgeInsets.fromLTRB(14, 8, 14, 16),
-        child: const TextField(
-          decoration: InputDecoration(
-            hintText: 'Message…',
-            prefixIcon: Icon(Icons.add, color: _muted),
-            suffixIcon: Icon(Icons.send, color: _orange),
-          ),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: controller,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) => onSend(),
+                decoration: const InputDecoration(
+                  hintText: 'Message…',
+                  prefixIcon: Icon(Icons.add, color: _muted),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton.filled(
+              tooltip: 'Send message',
+              onPressed: onSend,
+              icon: const Icon(Icons.send_rounded),
+              style: IconButton.styleFrom(backgroundColor: _orange),
+            ),
+          ],
         ),
       ),
     ],
@@ -1603,36 +2647,104 @@ class _BottomNavigation extends StatelessWidget {
   final ValueChanged<int> onSelect;
 
   @override
-  Widget build(BuildContext context) => NavigationBar(
-    height: 62,
-    selectedIndex: selectedIndex,
-    onDestinationSelected: onSelect,
-    backgroundColor: _background,
-    indicatorColor: Colors.transparent,
-    labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-    destinations: const [
-      NavigationDestination(
-        icon: Icon(Icons.home_outlined, size: 20),
-        selectedIcon: Icon(Icons.home, size: 20),
-        label: 'Home',
+  Widget build(BuildContext context) => SafeArea(
+    top: false,
+    child: Container(
+      height: 66,
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+      decoration: const BoxDecoration(
+        color: Color(0xFF151311),
+        border: Border(top: BorderSide(color: Color(0xFF25211E))),
       ),
-      NavigationDestination(
-        icon: Icon(Icons.search, size: 20),
-        selectedIcon: Icon(Icons.search, size: 20),
-        label: 'Search',
+      child: Row(
+        children: [
+          _BottomNavItem(
+            icon: Icons.home_outlined,
+            label: 'Home',
+            index: 0,
+            selected: selectedIndex,
+            onTap: onSelect,
+          ),
+          _BottomNavItem(
+            icon: Icons.search_rounded,
+            label: 'Search',
+            index: 1,
+            selected: selectedIndex,
+            onTap: onSelect,
+          ),
+          _BottomNavItem(
+            icon: Icons.chat_bubble_outline_rounded,
+            label: 'Chat',
+            index: 2,
+            selected: selectedIndex,
+            onTap: onSelect,
+          ),
+          _BottomNavItem(
+            icon: Icons.video_library_outlined,
+            label: 'Library',
+            index: 3,
+            selected: selectedIndex,
+            onTap: onSelect,
+          ),
+          _BottomNavItem(
+            icon: Icons.person_outline_rounded,
+            label: 'Profile',
+            index: 4,
+            selected: selectedIndex,
+            onTap: onSelect,
+          ),
+        ],
       ),
-      NavigationDestination(
-        icon: Icon(Icons.video_library_outlined, size: 20),
-        selectedIcon: Icon(Icons.video_library, size: 20),
-        label: 'Library',
-      ),
-      NavigationDestination(
-        icon: Icon(Icons.person_outline, size: 20),
-        selectedIcon: Icon(Icons.person, size: 20),
-        label: 'Profile',
-      ),
-    ],
+    ),
   );
+}
+
+class _BottomNavItem extends StatelessWidget {
+  const _BottomNavItem({
+    required this.icon,
+    required this.label,
+    required this.index,
+    required this.selected,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final int index, selected;
+  final ValueChanged<int> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = selected == index;
+    return Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(19),
+        onTap: () => onTap(index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          decoration: BoxDecoration(
+            color: active ? _orange : Colors.transparent,
+            borderRadius: BorderRadius.circular(19),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: active ? Colors.white : _muted, size: 20),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 9,
+                  color: active ? Colors.white : _muted,
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _MoviePoster extends StatelessWidget {
@@ -1731,7 +2843,7 @@ class _MoviePoster extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           const Text(
-            '2026 · Movie',
+            '2025 · Movie',
             style: TextStyle(fontSize: 8, color: _muted),
           ),
         ],
@@ -1753,7 +2865,7 @@ class _SearchResult extends StatelessWidget {
       width: 45,
       height: 53,
       decoration: BoxDecoration(
-        color: title == 'The Last Horizon' ? _purple : _panelRaised,
+        color: title == '28 Years Later' ? _purple : _panelRaised,
         borderRadius: BorderRadius.circular(6),
       ),
     ),
@@ -1785,7 +2897,7 @@ class _LibraryTitle extends StatelessWidget {
             width: 68,
             height: 82,
             decoration: BoxDecoration(
-              color: title == 'The Last Horizon' ? _purple : _panelRaised,
+              color: title == '28 Years Later' ? _purple : _panelRaised,
               borderRadius: BorderRadius.circular(7),
             ),
           ),
@@ -1939,7 +3051,7 @@ class _SharedMovieCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'THE LAST HORIZON',
+              '28 YEARS LATER',
               style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700),
             ),
             SizedBox(height: 4),

@@ -4,7 +4,7 @@ StreamCatch is a movie discovery and viewing app for Android and Windows, built 
 
 ## Current build
 
-The repository contains the Flutter app and Android, Windows, and Web runners. The current milestone is a navigable UI prototype with Welcome, Sign In, Home, Search, Movie Details, My Library, Downloads, Profile, Messages, Conversation, Communities, Watch Together, and Watch Room screens. Sample catalogue details and image URLs are demonstration content. TMDB, accounts, playback, studio publishing, payments, messages, and downloads are not connected yet.
+The repository contains the Flutter app and Android, Windows, and Web runners. The current milestone is a navigable UI prototype with Welcome, Sign In, Home, Search, Movie Details, My Library, Downloads, Profile, Chat, Conversation, Communities, Watch Together, and Watch Room screens. The visual direction follows the supplied black-and-orange reference: a warm orange accent, image-led title cards, orange playback controls, and Chat in the five-item bottom navigation. Wide browser previews show Home, Movie Details, and Episodes as angled phone mockups; narrow windows use the standard single-screen app. The sample conversation composer works in memory for the current app session; there is no account-backed message delivery or cross-device sync yet. Sample catalogue details and image URLs are demonstration content. TMDB, accounts, playback, studio publishing, payments, and downloads are not connected yet.
 
 The demo images are served from Unsplash at runtime. Replace them with appropriately licensed TMDB artwork or approved studio artwork when the catalogue provider is implemented. TMDB metadata and images must follow TMDB's terms and attribution requirements; metadata access does not grant movie streaming rights.
 
@@ -33,7 +33,36 @@ The demo images are served from Unsplash at runtime. Replace them with appropria
 | Optional managed services | Supabase for selected auth or storage needs | Optional |
 | Payments | Provider supporting Nigeria and intended international markets | Decision pending |
 
-Cloud accounts, API credentials, content licenses, and payment providers are not configured. Do not commit secrets, signing keys, or private rights documents.
+The current implementation keeps its screen shell in `lib/main.dart`; the feature folders below are the target organization as service integrations are added. Cloud accounts, API credentials, content licenses, and payment providers are not configured. Do not commit secrets, signing keys, or private rights documents.
+
+## Target code layout
+
+```text
+lib/
+  main.dart
+  app/
+  core/config/
+  core/network/
+  core/theme/
+  core/utilities/
+  features/auth/
+  features/home/
+  features/movies/
+  features/search/
+  features/watchlist/
+  features/reviews/
+  features/downloads/
+  features/chat/
+  features/profile/
+  shared/
+backend/
+  cmd/api/
+  internal/{auth,users,movies,search,watchlist,reviews,downloads,chat,notifications,watchtogether,moderation,admin}/
+  migrations/
+docs/
+```
+
+See [the architecture and phased rollout](docs/architecture.md) for service responsibilities, trust boundaries, and what can be developed with local tools before cloud accounts and media rights are available.
 
 ## Requirements
 
@@ -58,6 +87,22 @@ flutter run -d chrome
 ```
 
 Use `flutter devices` to find a connected Android device or emulator, then run `flutter run -d <device-id>`. For Windows, run `flutter run -d windows` after installing the C++ workload.
+
+### Install the current demo on an Android phone
+
+A debug APK is already built at `build/app/outputs/flutter-apk/app-debug.apk` (about 144 MiB). To rebuild it after changing the app, run:
+
+```powershell
+flutter build apk --debug
+```
+
+Then:
+
+1. Copy `build/app/outputs/flutter-apk/app-debug.apk` to the phone with a USB cable, or upload it to a private cloud drive and download it on the phone.
+2. Open the APK from the phone's Files or Downloads app. If Android asks, allow that app to install unknown apps, then return and tap **Install**.
+3. Open StreamCatch. Share the APK file with testers through a private link or direct transfer; each Android tester installs their own copy.
+
+This is a debug build for small-group feedback, not a Play Store release. The release APK command is `flutter build apk --release --split-per-abi`; it produces smaller per-processor packages, but a release build and signing key still need to be prepared before public distribution. A release build was not produced in this setup because Gradle could not resolve a dependency from Maven Central. The debug app's Chat tab and sample conversation work only in the current app session; there is no shared server, user accounts, or cross-device messaging yet. Catalogue, playback, and media services also remain unconnected.
 
 ## Repository layout
 
